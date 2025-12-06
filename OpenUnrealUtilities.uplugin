@@ -82,7 +82,7 @@
 		},
 		{
 			"Name": "OUUTags",
-			"Enabled": true
+			"Enabled": false
 		}
 	]
 }

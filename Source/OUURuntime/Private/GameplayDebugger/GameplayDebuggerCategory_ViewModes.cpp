@@ -34,7 +34,7 @@ namespace OUU::Runtime::Private
 		case VMI_MeshUVDensityAccuracy: return TEXT("MeshUVDensityAccuracy");
 		case VMI_MaterialTextureScaleAccuracy: return TEXT("MaterialTextureScaleAccuracy");
 		case VMI_RequiredTextureResolution: return TEXT("RequiredTextureResolution");
-		case VMI_VirtualTexturePendingMips: return TEXT("VirtualTexturePendingMips");
+		//case VMI_VirtualTexturePendingMips: return TEXT("VirtualTexturePendingMips");
 		case VMI_StationaryLightOverlap: return TEXT("StationaryLightOverlap");
 		case VMI_LightmapDensity: return TEXT("LightmapDensity");
 		case VMI_LitLightmapDensity: return TEXT("LitLightmapDensity");

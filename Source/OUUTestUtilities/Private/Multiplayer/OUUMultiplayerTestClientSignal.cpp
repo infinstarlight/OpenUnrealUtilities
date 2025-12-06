@@ -10,7 +10,8 @@ AOUUMultiplayerTestClientSignal::AOUUMultiplayerTestClientSignal()
 {
 	bReplicates = true;
 	bAlwaysRelevant = true;
-	NetUpdateFrequency = 1.f;
+	//NetUpdateFrequency = 1.f;
+	SetNetUpdateFrequency(1.0f);
 }
 
 void AOUUMultiplayerTestClientSignal::BeginPlay()

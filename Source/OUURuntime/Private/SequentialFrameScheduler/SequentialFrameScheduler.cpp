@@ -76,17 +76,17 @@ void FSequentialFrameScheduler::Tick(float DeltaTime)
 		const TSharedRef<FSequentialFrameTask> CurrentTask = TaskHandlesToTaskInfos[TaskHandle].ToSharedRef();
 
 		// Skip stale tasks
-		if (CurrentTask->Delegate.IsBound() == false)
-		{
-			UE_LOG(
-				LogOpenUnrealUtilities,
-				Warning,
-				TEXT("Task '%s' became stale and was auto-removed. Please explicitly remove your tasks when your task "
-					 "object is destroyed."),
-				*GetTaskDebugName(TaskHandle));
-			RemoveTask(TaskHandle);
-			continue;
-		}
+		// if (CurrentTask->Delegate.IsBound() == false)
+		// {
+		// 	UE_LOG(
+		// 		LogOpenUnrealUtilities,
+		// 		Warning,
+		// 		TEXT("Task '%s' became stale and was auto-removed. Please explicitly remove your tasks when your task "
+		// 			 "object is destroyed."),
+		// 		*GetTaskDebugName(TaskHandle));
+		// 	RemoveTask(TaskHandle);
+		// 	continue;
+		// }
 
 		// No overtime means the task is not due yet.
 		// If it's not set as "tick as often as possible" we should not pick it prematurely

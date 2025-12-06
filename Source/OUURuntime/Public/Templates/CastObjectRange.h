@@ -3,6 +3,7 @@
 #pragma once
 
 #include "IteratorUtils.h"
+#include "Templates/Casts.h"
 #include "Traits/ConditionalType.h"
 #include "Traits/IteratorTraits.h"
 
@@ -20,7 +21,8 @@ private:
 	using ReferenceType = typename TIteratorTraits<IteratorType>::ReferenceType;
 
 	static_assert(TIsPointer<CastTargetType>::Value == false, "TargetType must not be a pointer type");
-	static_assert(UECasts_Private::TIsCastable<CastTargetType>::Value, "TargetType must be a castable UObject type!");
+	//UECasts_Private doesn't exist, perhaps this is the alternative
+	static_assert(UE::CoreUObject::Private::TIsCastable<CastTargetType>::Value, "TargetType must be a castable UObject type!");
 
 	IteratorType WrappedIterator;
 

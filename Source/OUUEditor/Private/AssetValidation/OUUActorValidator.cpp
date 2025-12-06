@@ -22,7 +22,9 @@ EDataValidationResult UOUUActorValidator::ValidateLoadedAsset_Implementation(
 
 	if (IsValid(Actor) == false)
 	{
-		AssetFails(InAsset, INVTEXT("Asset is not an actor"), IN OUT ValidationErrors);
+		//AssetFails(InAsset, INVTEXT("Asset is not an actor"), IN OUT ValidationErrors);
+		//The above is deprecated and has been replaced with the following:
+		AssetFails(InAsset, INVTEXT("Asset is not an actor"));
 		return EDataValidationResult::Invalid;
 	}
 

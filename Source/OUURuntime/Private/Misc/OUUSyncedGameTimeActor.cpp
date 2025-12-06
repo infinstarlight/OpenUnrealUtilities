@@ -29,7 +29,9 @@ double FOUUSyncedGameTimeBlend::GetBlendedTimeOffset(double ServerTime) const
 AOUUSyncedGameTimeActor::AOUUSyncedGameTimeActor()
 {
 	bReplicates = true;
-	NetUpdateFrequency = 1.0f;
+	//NetUpdateFrequency = 1.0f;
+	//Public access to NetUpdateFrequency is deprecated, use SetNetUpdateFrequency instead
+	SetNetUpdateFrequency(1.0f);
 
 	PrimaryActorTick.bCanEverTick = true;
 

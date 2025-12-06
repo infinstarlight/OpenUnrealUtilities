@@ -382,9 +382,12 @@ void UOUUActorPool::ProcessPendingDestruction(const double MaxTimeSlicePerTick)
 		while ((DeactivatedActorsToDestroy.Num() || ActorsToDestroy.Num())
 			   && (HasToDestroyAllActorsOnServerSide || FPlatformTime::Seconds() <= TimeSliceEnd))
 		{
-			AActor* ActorToDestroy = DeactivatedActorsToDestroy.Num()
-				? DeactivatedActorsToDestroy.Pop(/*bAllowShrinking*/ false)
-				: ActorsToDestroy.Pop(/*bAllowShrinking*/ false);
+			// AActor* ActorToDestroy = DeactivatedActorsToDestroy.Num()
+			// 	? DeactivatedActorsToDestroy.Pop(/*bAllowShrinking*/ false)
+			// 	: ActorsToDestroy.Pop(/*bAllowShrinking*/ false);
+			//Pop(bAllowShrinking) is deprecated, use EAllowShrinking enum instead
+			AActor* ActorToDestroy = DeactivatedActorsToDestroy.Num() ? DeactivatedActorsToDestroy.Pop(EAllowShrinking::No) : 
+																	ActorsToDestroy.Pop(EAllowShrinking::No);
 			if (!TryReleaseActorToPool(ActorToDestroy))
 			{
 				// Couldn't release actor back to pool, so destroy it

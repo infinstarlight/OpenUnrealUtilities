@@ -47,7 +47,9 @@ EDataValidationResult UOUUBlueprintValidator::ValidateLoadedAsset_Implementation
 
 	if (IsValid(Blueprint) == false)
 	{
-		AssetFails(InAsset, INVTEXT("Asset is not a blueprint"), IN OUT ValidationErrors);
+		//This is deprecated
+		//AssetFails(InAsset, INVTEXT("Asset is not a blueprint"), IN OUT ValidationErrors);
+		AssetFails(InAsset, INVTEXT("Asset is not a blueprint"));
 		return EDataValidationResult::Invalid;
 	}
 
@@ -80,14 +82,22 @@ EDataValidationResult UOUUBlueprintValidator::ValidateLoadedAsset_Implementation
 				else if (Status == EBlueprintHasDefaultRoot::YesNonMovable)
 				{
 					Result = EDataValidationResult::Invalid;
+					// AssetFails(
+					// 	InAsset,
+					// 	FText::FormatOrdered(
+					// 		INVTEXT("Actor blueprint {0} has a NON-MOVABLE DefaultSceneRoot and child blueprints. "
+					// 				"This will inevitably break attachment of child blueprints, because they are not "
+					// 				"inheritable. Replace with any named component"),
+					// 		FText::FromName(BlueprintToCheck->GetFName())),
+					// 	ValidationErrors);
 					AssetFails(
 						InAsset,
 						FText::FormatOrdered(
-							INVTEXT("Actor blueprint {0} has a NON-MOVABLE DefaultSceneRoot and child blueprints. "
-									"This will inevitably break attachment of child blueprints, because they are not "
-									"inheritable. Replace with any named component"),
-							FText::FromName(BlueprintToCheck->GetFName())),
-						ValidationErrors);
+							INVTEXT(
+								"Actor blueprint {0} has a NON-MOVABLE DefaultSceneRoot and child blueprints. "
+								"This will inevitably break attachment of child blueprints, because they are not "
+								"inheritable. Replace with any named component"),
+							FText::FromName(BlueprintToCheck->GetFName())));
 					break;
 				}
 			}

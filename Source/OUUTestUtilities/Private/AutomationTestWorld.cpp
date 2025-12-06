@@ -1,7 +1,7 @@
 // Copyright (c) 2023 Jonas Reich & Contributors
 
 #include "AutomationTestWorld.h"
-
+#include "Misc/Crc.h"
 #if WITH_AUTOMATION_WORKER
 
 	#include "Engine/EngineTypes.h"
@@ -15,6 +15,7 @@
 	#include "GameMapsSettings.h"
 	#include "Engine/GameViewportClient.h"
 	#include "Online/CoreOnline.h"
+	
 
 FOUUAutomationTestWorld::FOUUAutomationTestWorld(const FString& InWorldName) :
 	URL(TEXT("/OpenUnrealUtilities/Runtime/EmptyWorld")), WorldName(InWorldName)
@@ -75,10 +76,13 @@ bool FOUUAutomationTestWorld::InitializeGame()
 		UE_LOG(LogOpenUnrealUtilities, Error, TEXT("Could not InitializeGame invalid world!"));
 		return false;
 	}
+	
+	FString ExtraDebugString;
 
 	// Set game mode
 	const bool bIsGameModeSet = World->SetGameMode(URL);
-	CHECK_INIT_GAME_CONDITION(!bIsGameModeSet, "Failed to set game mode");
+	ExtraDebugString = TEXT("Failed to set game mode");
+	CHECK_INIT_GAME_CONDITION(!bIsGameModeSet, ExtraDebugString);
 	GameMode = World->GetAuthGameMode();
 
 	// Debug error string required for many of the initialization functions on UWorld
@@ -93,7 +97,8 @@ bool FOUUAutomationTestWorld::InitializeGame()
 	GameMode->PlayerStateClass = APlayerState::StaticClass();
 	LocalPlayer = World->GetGameInstance()->CreateLocalPlayer(0, OUT ErrorString, false);
 	CHECK_INIT_GAME_CONDITION(ErrorString.Len() > 0, ErrorString);
-	CHECK_INIT_GAME_CONDITION(LocalPlayer == nullptr, "Failed to spawn LocalPlayer: returned nullptr");
+	ExtraDebugString = TEXT("Failed to spawn LocalPlayer: returned nullptr");
+	CHECK_INIT_GAME_CONDITION(LocalPlayer == nullptr, ExtraDebugString);
 
 	// Begin play for all actors
 	BeginPlay();
@@ -103,7 +108,8 @@ bool FOUUAutomationTestWorld::InitializeGame()
 
 	PlayerController = World->SpawnPlayActor(LocalPlayer, ENetRole::ROLE_Authority, URL, NetIdRepl, OUT ErrorString);
 	CHECK_INIT_GAME_CONDITION(ErrorString.Len() > 0, ErrorString);
-	CHECK_INIT_GAME_CONDITION(PlayerController == nullptr, "Failed to spawn PlayerController: returned nullptr");
+	ExtraDebugString = TEXT("Failed to spawn PlayerController: returned nullptr");
+	CHECK_INIT_GAME_CONDITION(PlayerController == nullptr, ExtraDebugString);
 
 	return true;
 }
@@ -124,7 +130,8 @@ void FOUUAutomationTestWorld::CreateWorldImplementation(const FString& WorldSuff
 		DestroyWorldImplementation();
 	}
 
-	const FString NewWorldName = "OUUAutomationTestWorld_" + WorldName + WorldSuffix;
+	FString ThisWorldName = WorldName += WorldSuffix;
+	const FString NewWorldName = FString(TEXT("OUUAutomationTestWorld_")) += ThisWorldName;
 
 	const auto* GameMapSettings = GetMutableDefault<UGameMapsSettings>();
 	PreviousDefaultMap = GameMapSettings->GetGameDefaultMap();

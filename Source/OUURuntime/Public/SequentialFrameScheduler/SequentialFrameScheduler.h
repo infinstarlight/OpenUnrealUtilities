@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-
+#include "TimerManager.h"
 #include "Misc/EngineVersionComparison.h"
 #include "SequentialFrameScheduler/SequentialFrameTask.h"
 #include "Templates/RingAggregator.h"

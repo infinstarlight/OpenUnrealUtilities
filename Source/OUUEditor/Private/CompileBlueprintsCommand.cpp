@@ -544,9 +544,8 @@ namespace OUU::Editor::CompileBlueprints
 		{
 			IncludeFoldersList.Add(TEXT("/Engine/"));
 		}
-
 		TArray<TSharedRef<IPlugin>> AllContentPlugins = IPluginManager::Get().GetEnabledPluginsWithContent();
-		for (const TSharedRef<IPlugin> Plugin : AllContentPlugins)
+		for (const auto& Plugin : AllContentPlugins)
 		{
 			if ((bIncludeProject && Plugin->GetLoadedFrom() == EPluginLoadedFrom::Project)
 				|| (bIncludeEngine && Plugin->GetLoadedFrom() == EPluginLoadedFrom::Engine))

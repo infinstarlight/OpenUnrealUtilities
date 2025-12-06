@@ -16,6 +16,7 @@ OUU_DECLARE_OBJECT_FLAGS(MarkAsRootSet),
 OUU_DECLARE_OBJECT_FLAGS(TagGarbageTemp),
 OUU_DECLARE_OBJECT_FLAGS(NeedInitialization),
 OUU_DECLARE_OBJECT_FLAGS(NeedLoad),
+//This flag is deprecated and should not be used anymore. It is only kept here to maintain binary compatibility with older packages.
 OUU_DECLARE_OBJECT_FLAGS(KeepForCooker),
 OUU_DECLARE_OBJECT_FLAGS(NeedPostLoad),
 OUU_DECLARE_OBJECT_FLAGS(NeedPostLoadSubobjects),

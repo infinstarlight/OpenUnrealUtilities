@@ -46,7 +46,13 @@ float FSequentialFrameTask::GetPredictedOvertimeFraction(float PredictedDeltaTim
 void FSequentialFrameTask::Execute(float Now)
 {
 	LastInvocationTime = Now;
-	Delegate.Execute();
+	//Delegate.Execute();
+}
+
+bool FSequentialFrameTask::IsBound() const
+{
+	//TODO: Implement this as necessary
+	return false;
 }
 
 float FSequentialFrameTask::GetPeriodDivisor() const

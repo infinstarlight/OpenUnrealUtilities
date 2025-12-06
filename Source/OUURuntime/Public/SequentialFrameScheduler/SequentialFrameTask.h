@@ -80,6 +80,8 @@ public:
 	float GetPredictedOvertimeFraction(float PredictedDeltaTime, int32 NumFrames) const;
 
 	void Execute(float Now);
+	
+	bool IsBound() const;
 
 	// Movable only (required because of FTimerUnifiedDelegate)
 	FSequentialFrameTask() = default;

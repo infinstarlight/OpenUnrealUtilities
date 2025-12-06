@@ -311,10 +311,16 @@ void FGameplayDebuggerCategory_OUUAbilities::DetermineAbilityStatusText(
 		OutStatusText = TEXT(" (InputBlocked)");
 		OutAbilityTextColor = FColor::Red;
 	}
-	else if (Ability->AbilityTags.HasAny(BlockedAbilityTags))
+	// else if (Ability->AbilityTags.HasAny(BlockedAbilityTags))
+	// {
+	// 	OutStatusText = TEXT(" (TagBlocked)");
+	// 	OutAbilityTextColor = FColor::Red;
+	// }
+	//Direct access to AbilityTags is deprecated, use GetAssetTags() instead
+	else if (Ability->GetAssetTags().HasAny(BlockedAbilityTags))
 	{
-		OutStatusText = TEXT(" (TagBlocked)");
-		OutAbilityTextColor = FColor::Red;
+			OutStatusText = TEXT(" (TagBlocked)");
+			OutAbilityTextColor = FColor::Red;
 	}
 	else if (
 		Ability->CanActivateAbility(
@@ -363,10 +369,15 @@ void FGameplayDebuggerCategory_OUUAbilities::DrawAbility(
 	DetermineAbilityStatusText(BlockedAbilityTags, AbilitySpec, Ability, OUT StatusText, OUT AbilityTextColor);
 
 	const FString InputPressedStr = AbilitySpec.InputPressed ? TEXT("(InputPressed)") : TEXT("");
+	// const FString ActivationModeStr = AbilitySpec.IsActive() ? UEnum::GetValueAsString(
+	// 									  TEXT("GameplayAbilities.EGameplayAbilityActivationMode"),
+	// 									  AbilitySpec.ActivationInfo.ActivationMode)
+	// 														 : TEXT("");
+	//Direct access to ActivationInfo is deprecated, as ActivationInfo on Spec only applies to NonInstanced abilities (which are now deprecated)
+	//Instanced abilities have their own per-instance CurrentActivationInfo
 	const FString ActivationModeStr = AbilitySpec.IsActive() ? UEnum::GetValueAsString(
-										  TEXT("GameplayAbilities.EGameplayAbilityActivationMode"),
-										  AbilitySpec.ActivationInfo.ActivationMode)
-															 : TEXT("");
+									  TEXT("GameplayAbilities.EGameplayAbilityActivationMode"),
+									  AbilitySpec.GetPrimaryInstance()->GetCurrentActivationInfo().ActivationMode) : TEXT("");
 
 	Canvas->SetDrawColor(AbilityTextColor);
 
@@ -435,6 +446,7 @@ void FGameplayDebuggerCategory_OUUAbilities::DrawGameplayCue(
 
 	auto CueClass = CueData.LoadedGameplayCueClass;
 
+	//ClassDefaultObject will be made private in 5.7, will have to use GetDefaultObject() then
 	if (Cast<UGameplayCueNotify_Static>(CueClass->ClassDefaultObject) != nullptr)
 	{
 		Canvas->SetDrawColor(FColorList::Grey);
