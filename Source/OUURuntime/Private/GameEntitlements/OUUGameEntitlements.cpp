@@ -8,16 +8,28 @@ extern TAutoConsoleVariable<FString> CVar_OverrideEntitlementVersion;
 
 namespace OUU::Runtime::GameEntitlements
 {
-	void UpdateOverrideEntitlementFromCVar()
+	FOUUGameEntitlementVersion GetOverrideEntitlement()
 	{
-		auto TagName = FOUUGameEntitlementTags::Version::Get().GetName() + TEXT(".")
-			+ CVar_OverrideEntitlementVersion.GetValueOnGameThread();
+		const auto TagName = FOUUGameEntitlementTags::Version::Get().GetName() + TEXT(".")
+				+ CVar_OverrideEntitlementVersion.GetValueOnGameThread();
 
 		const FGameplayTag RawTag = FGameplayTag::RequestGameplayTag(*TagName, false);
-		const auto VersionTag = FOUUGameEntitlementVersion::TryConvert(RawTag);
+		return FOUUGameEntitlementVersion::TryConvert(RawTag);
+	}
 
-		// It's okay or even expected to pass an invalid tag here, because empty/invalid tags will reset the override.
-		UOUUGameEntitlementsSubsystem::Get().SetOverrideVersion(VersionTag);
+	void UpdateOverrideEntitlementFromCVar()
+	{
+		// When using command line to set the cvar via
+		//     -ini:Engine:[ConsoleVariables]:ouu.Entitlements.OverrideVersion=...
+		// this may be called earlier than the gameplay tags manager is initialized. Requesting a gameplay tag anyways
+		// screws with the tag load order, so instead we rely on the subsystem initialization below to call this.
+		if (UGameplayTagsManager::GetIfAllocated() && GEngine)
+		{
+			// It's okay or even expected to pass an invalid tag here, because empty/invalid tags will reset the
+			// override.
+			UOUUGameEntitlementsSubsystem::Get().SetOverrideVersion(
+				OUU::Runtime::GameEntitlements::GetOverrideEntitlement());
+		}
 	}
 } // namespace OUU::Runtime::GameEntitlements
 
@@ -37,18 +49,24 @@ UOUUGameEntitlementsSubsystem& UOUUGameEntitlementsSubsystem::Get()
 bool UOUUGameEntitlementsSubsystem::IsEntitled(const FOUUGameEntitlementModule& Module) const
 {
 	// Invalid = empty tag should be treated as asking for "no requirements"
-	return Module.IsValid() == false || ActiveEntitlements.HasTag(Module);
+	return Module.IsValid() == false
+		|| ActiveEntitlements.HasTag(FOUUGameEntitlementModuleAndCollection::ConvertChecked(Module));
 }
 
 bool UOUUGameEntitlementsSubsystem::IsEntitled(const FOUUGameEntitlementModules_Ref& Modules) const
 {
 	// Expected to return true if Modules is empty
-	return ActiveEntitlements.HasAll(Modules);
+	return ActiveEntitlements.HasAll(FOUUGameEntitlementModuleAndCollections_Value::CreateChecked(Modules.Get()));
 }
 
-FOUUGameEntitlementModules_Ref UOUUGameEntitlementsSubsystem::GetActiveEntitlements() const
+bool UOUUGameEntitlementsSubsystem::HasInitializedActiveEntitlements() const
 {
-	return ActiveEntitlements;
+	return bHasInitializedActiveEntitlements;
+}
+
+FOUUGameEntitlementModules_Value UOUUGameEntitlementsSubsystem::GetActiveEntitlements() const
+{
+	return FOUUGameEntitlementModules_Value::CreateFiltered(ActiveEntitlements.Get());
 }
 
 FGameplayTagContainer UOUUGameEntitlementsSubsystem::K2_GetActiveEntitlements() const
@@ -63,15 +81,28 @@ FOUUGameEntitlementVersion UOUUGameEntitlementsSubsystem::GetActiveVersion() con
 
 void UOUUGameEntitlementsSubsystem::SetOverrideVersion(const FOUUGameEntitlementVersion& Version)
 {
+#if WITH_EDITOR
+	FScopedTransaction Transaction(INVTEXT("Change Entitlement Override Version"));
+	Modify();
+#endif
+
 	OverrideVersion = Version;
-	RefreshActiveVersionAndEntitlements();
+	if (bHasInitializedActiveEntitlements)
+	{
+		RefreshActiveVersionAndEntitlements();
+	}
 }
 
 void UOUUGameEntitlementsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
-	OUU::Runtime::GameEntitlements::UpdateOverrideEntitlementFromCVar();
-	RefreshActiveVersionAndEntitlements();
+
+	checkf(UGameplayTagsManager::GetIfAllocated(), TEXT("Entitlements subsystem needs valid gameplay tags manager"));
+
+	UGameplayTagsManager::Get().CallOrRegister_OnDoneAddingNativeTagsDelegate(
+		FSimpleMulticastDelegate::FDelegate::CreateUObject(
+			this,
+			&UOUUGameEntitlementsSubsystem::RefreshActiveVersionAndEntitlements));
 
 #if WITH_EDITOR
 	GetMutableDefault<UOUUGameEntitlementSettings>()
@@ -79,15 +110,45 @@ void UOUUGameEntitlementsSubsystem::Initialize(FSubsystemCollectionBase& Collect
 #endif
 }
 
-#if WITH_EDITOR
-void UOUUGameEntitlementsSubsystem::OnSettingsChanged(FPropertyChangedChainEvent& _PropertyChangedEvent)
+bool UOUUGameEntitlementsSubsystem::IsEntitledToCollection(const FOUUGameEntitlementCollection& Collection) const
 {
+	// Invalid = empty tag should be treated as asking for "no requirements"
+	return Collection.IsValid() == false
+		|| ActiveEntitlements.HasTag(FOUUGameEntitlementModuleAndCollection::ConvertChecked(Collection));
+}
+
+bool UOUUGameEntitlementsSubsystem::IsEntitledToCollection(const FOUUGameEntitlementCollections_Ref& Collections) const
+{
+	// Expected to return true if Modules is empty
+	return ActiveEntitlements.HasAll(FOUUGameEntitlementModuleAndCollections_Value::CreateChecked(Collections.Get()));
+}
+
+#if WITH_EDITOR
+void UOUUGameEntitlementsSubsystem::OnSettingsChanged(FPropertyChangedChainEvent& PropertyChangedEvent)
+{
+	RefreshActiveVersionAndEntitlements();
+}
+
+void UOUUGameEntitlementsSubsystem::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
 	RefreshActiveVersionAndEntitlements();
 }
 #endif
 
 void UOUUGameEntitlementsSubsystem::RefreshActiveVersionAndEntitlements()
 {
+	// Prevent recursing into this function
+	bHasInitializedActiveEntitlements = false;
+
+	static FOUUGameEntitlementVersion CachedOverrideVersion;
+	if (OUU::Runtime::GameEntitlements::GetOverrideEntitlement() != CachedOverrideVersion)
+	{
+		// Only update the override version with the CVar's value if it has changed
+		OUU::Runtime::GameEntitlements::UpdateOverrideEntitlementFromCVar();
+		CachedOverrideVersion = OverrideVersion;
+	}
+	
 	auto& Settings = UOUUGameEntitlementSettings::Get();
 #if WITH_EDITOR
 	auto& DefaultVersion =
@@ -99,24 +160,28 @@ void UOUUGameEntitlementsSubsystem::RefreshActiveVersionAndEntitlements()
 	ActiveEntitlements.Reset();
 	if (auto* EntitlementsPtr = Settings.EntitlementsPerVersion.Find(ActiveVersion))
 	{
-		ActiveEntitlements = FOUUGameEntitlementModules_Value::CreateChecked(*EntitlementsPtr);
+		ActiveEntitlements = FOUUGameEntitlementModuleAndCollections_Value::CreateChecked(*EntitlementsPtr);
 	}
 
 	// recursively add entitlements from module collections
 	int32 LastEntitlementCount = -1;
 	while (ActiveEntitlements.Num() != LastEntitlementCount)
 	{
-		for (auto Entitlement : ActiveEntitlements)
+		for (const auto Entitlement : ActiveEntitlements)
 		{
 			auto EntitlementAsCollection = FOUUGameEntitlementCollection::TryConvert(Entitlement);
 			if (EntitlementAsCollection.IsValid())
 			{
 				if (auto* EntitlementsPtr = Settings.ModuleCollections.Find(EntitlementAsCollection))
 				{
-					ActiveEntitlements.AppendTags(FOUUGameEntitlementModules_Value::CreateChecked(*EntitlementsPtr));
+					ActiveEntitlements.AppendTags(
+						FOUUGameEntitlementModuleAndCollections_Value::CreateChecked(*EntitlementsPtr));
 				}
 			}
 		}
 		LastEntitlementCount = ActiveEntitlements.Num();
 	}
+
+	bHasInitializedActiveEntitlements = true;
+	OnActiveEntitlementsChanged.Broadcast();
 }

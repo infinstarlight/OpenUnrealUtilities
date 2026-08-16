@@ -235,7 +235,7 @@ AActor* UOUUActorPool::SpawnOrRetrieveFromPool(
 
 	if (Pool && Pool->Num() > 0)
 	{
-		TObjectPtr<AActor> PooledActor = (*Pool)[0];
+		const TObjectPtr<AActor> PooledActor = (*Pool)[0];
 		Pool->RemoveAt(0);
 		--NumActorPooled;
 		ActivateActor(PooledActor);
@@ -382,12 +382,18 @@ void UOUUActorPool::ProcessPendingDestruction(const double MaxTimeSlicePerTick)
 		while ((DeactivatedActorsToDestroy.Num() || ActorsToDestroy.Num())
 			   && (HasToDestroyAllActorsOnServerSide || FPlatformTime::Seconds() <= TimeSliceEnd))
 		{
+<<<<<<< HEAD
 			// AActor* ActorToDestroy = DeactivatedActorsToDestroy.Num()
 			// 	? DeactivatedActorsToDestroy.Pop(/*bAllowShrinking*/ false)
 			// 	: ActorsToDestroy.Pop(/*bAllowShrinking*/ false);
 			//Pop(bAllowShrinking) is deprecated, use EAllowShrinking enum instead
 			AActor* ActorToDestroy = DeactivatedActorsToDestroy.Num() ? DeactivatedActorsToDestroy.Pop(EAllowShrinking::No) : 
 																	ActorsToDestroy.Pop(EAllowShrinking::No);
+=======
+			AActor* ActorToDestroy = DeactivatedActorsToDestroy.Num()
+				? DeactivatedActorsToDestroy.Pop(EAllowShrinking::No)
+				: ActorsToDestroy.Pop(EAllowShrinking::No);
+>>>>>>> origin/master
 			if (!TryReleaseActorToPool(ActorToDestroy))
 			{
 				// Couldn't release actor back to pool, so destroy it

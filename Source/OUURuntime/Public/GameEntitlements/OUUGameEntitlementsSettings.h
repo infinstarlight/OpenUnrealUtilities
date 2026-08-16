@@ -35,7 +35,12 @@ public:
 	UPROPERTY(Config, EditAnywhere)
 	FOUUGameEntitlementVersion DefaultEditorVersion;
 
-	UPROPERTY(Config, EditAnywhere, meta = (Categories = "TypedTag{OUUGameEntitlementModule}"))
+	// Enable an extension for the PIE toolbar to show current OVERRIDE entitlement version.
+	// Recommended to be used if your PIE testing needs frequent tests with different entitlement versions.
+	UPROPERTY(Config, EditAnywhere, meta = (ConfigRestartRequired = true))
+	bool EnablePIEToolbarExtension = false;
+
+	UPROPERTY(Config, EditAnywhere, meta = (Categories = "TypedTag{OUUGameEntitlementModuleAndCollection}"))
 	TMap<FOUUGameEntitlementVersion, FGameplayTagContainer> EntitlementsPerVersion;
 
 	UPROPERTY(Config, EditAnywhere, meta = (Categories = "TypedTag{OUUGameEntitlementModule}"))

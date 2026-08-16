@@ -3,6 +3,7 @@
 #include "AssetValidation/OUUBlueprintValidator.h"
 
 #include "Engine/SCS_Node.h"
+#include "Misc/DataValidation.h"
 
 enum class EBlueprintHasDefaultRoot
 {
@@ -26,9 +27,11 @@ EBlueprintHasDefaultRoot BlueprintHasNonMovableDefaultRoot(const UBlueprint& Blu
 															   : EBlueprintHasDefaultRoot::YesNonMovable;
 }
 
-bool UOUUBlueprintValidator::CanValidateAsset_Implementation(UObject* InAsset) const
+bool UOUUBlueprintValidator::CanValidateAsset_Implementation(
+	const FAssetData& InAssetData,
+	UObject* InAsset,
+	FDataValidationContext& InContext) const
 {
-	// For now: do not run this validator in cook.
 	if (IsValid(InAsset) == false)
 	{
 		return false;
@@ -38,24 +41,27 @@ bool UOUUBlueprintValidator::CanValidateAsset_Implementation(UObject* InAsset) c
 }
 
 EDataValidationResult UOUUBlueprintValidator::ValidateLoadedAsset_Implementation(
+	const FAssetData& InAssetData,
 	UObject* InAsset,
-	TArray<FText>& ValidationErrors)
+	FDataValidationContext& Context)
 {
-	EDataValidationResult Result = EDataValidationResult::Valid;
-
-	UBlueprint* Blueprint = Cast<UBlueprint>(InAsset);
+	const UBlueprint* Blueprint = Cast<UBlueprint>(InAsset);
 
 	if (IsValid(Blueprint) == false)
 	{
+<<<<<<< HEAD
 		//This is deprecated
 		//AssetFails(InAsset, INVTEXT("Asset is not a blueprint"), IN OUT ValidationErrors);
 		AssetFails(InAsset, INVTEXT("Asset is not a blueprint"));
+=======
+		Context.AddError(INVTEXT("Asset is not a blueprint"));
+>>>>>>> origin/master
 		return EDataValidationResult::Invalid;
 	}
 
 	if (Blueprint->ParentClass->IsChildOf<AActor>())
 	{
-		UClass* ClassToCheck = Blueprint->GeneratedClass;
+		const UClass* ClassToCheck = Blueprint->GeneratedClass;
 
 		while (ClassToCheck->IsInBlueprint())
 		{
@@ -65,22 +71,23 @@ EDataValidationResult UOUUBlueprintValidator::ValidateLoadedAsset_Implementation
 			const auto* BlueprintToCheck = CastChecked<UBlueprint>(ClassToCheck->ClassGeneratedBy);
 			if (ChildClasses.Num() > 0)
 			{
-				auto Status = BlueprintHasNonMovableDefaultRoot(*BlueprintToCheck);
+				const auto Status = BlueprintHasNonMovableDefaultRoot(*BlueprintToCheck);
 
 				if (Status == EBlueprintHasDefaultRoot::YesMovable)
 				{
-					AssetWarning(
-						InAsset,
-						FText::FormatOrdered(
-							INVTEXT(
-								"Actor blueprint {0} has a MOVABLE DefaultSceneRoot and child blueprints. These may "
+					const auto WarningMessage = FText::FormatOrdered(
+						INVTEXT("Actor blueprint {0} has a MOVABLE DefaultSceneRoot and child blueprints. These may "
 								"break attachment of child blueprints easily, because they are not inheritable. "
-								"Replace with any named component"),
-							FText::FromName(BlueprintToCheck->GetFName())));
+								"Consider replacing it with any named component - keep in mind that replacing the root"
+								"component of already placed actors can break attachment of manually added components!"),
+						FText::FromName(BlueprintToCheck->GetFName()));
+
+					Context.AddWarning(WarningMessage);
 					break;
 				}
 				else if (Status == EBlueprintHasDefaultRoot::YesNonMovable)
 				{
+<<<<<<< HEAD
 					Result = EDataValidationResult::Invalid;
 					// AssetFails(
 					// 	InAsset,
@@ -99,16 +106,21 @@ EDataValidationResult UOUUBlueprintValidator::ValidateLoadedAsset_Implementation
 								"inheritable. Replace with any named component"),
 							FText::FromName(BlueprintToCheck->GetFName())));
 					break;
+=======
+					const auto ErrorMessage = FText::FormatOrdered(
+						INVTEXT("Actor blueprint {0} has a NON-MOVABLE DefaultSceneRoot and child blueprints. "
+								"This will inevitably break attachment of child blueprints, because they are not "
+								"inheritable. Replace with any named component"),
+						FText::FromName(BlueprintToCheck->GetFName()));
+
+					Context.AddError(ErrorMessage);
+					return EDataValidationResult::Invalid;
+>>>>>>> origin/master
 				}
 			}
 
 			ClassToCheck = BlueprintToCheck->ParentClass;
 		}
 	}
-
-	if (Result == EDataValidationResult::Valid)
-	{
-		AssetPasses(InAsset);
-	}
-	return Result;
+	return EDataValidationResult::Valid;
 }

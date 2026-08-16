@@ -10,8 +10,12 @@ AOUUMultiplayerTestClientSignal::AOUUMultiplayerTestClientSignal()
 {
 	bReplicates = true;
 	bAlwaysRelevant = true;
+<<<<<<< HEAD
 	//NetUpdateFrequency = 1.f;
 	SetNetUpdateFrequency(1.0f);
+=======
+	SetNetUpdateFrequency(1.f);
+>>>>>>> origin/master
 }
 
 void AOUUMultiplayerTestClientSignal::BeginPlay()
@@ -39,7 +43,7 @@ void AOUUMultiplayerTestClientSignal::Server_NotifySyncPointReached_Implementati
 	if (!ensure(Test))
 		return;
 
-	auto* OwningPlayer = Cast<APlayerController> (GetOwner());
+	auto* OwningPlayer = Cast<APlayerController>(GetOwner());
 	check(OwningPlayer);
 	Test->ServerNotifyClientSyncMarkerReached(OwningPlayer, SyncPoint);
 }

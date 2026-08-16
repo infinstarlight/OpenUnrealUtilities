@@ -43,6 +43,36 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Open Unreal Utilities|Text")
 	static FText JoinBy(const TArray<FText>& Texts, FText Separator);
 
+	// Register a CSV string table for a plugin by resolving the file from plugin install directory.
+	// The string table is NOT automatically collected by the localization gatherer in-full when using this (which it
+	// would be when using the LOCTABLE_FROM_FILE_X macros), so you will need some other process to include the CSV
+	// source strings!
+	// @param InPluginRelativeTablePath path to csv (including extension) relative to the plugin's content directory
+	static void RegisterPluginStringTable(
+		const FString& InPluginName,
+		const FName& InTableId,
+		const FString& InNamespace,
+		const FString& InPluginRelativeTablePath);
+
+	// Register a CSV string table for a plugin (see above).
+	// This overload registers the string table with table and namespace derived from the base name of the input file.
+	// @param InPluginRelativeTablePath path to csv (including extension) relative to the plugin's content directory
+	static void RegisterPluginStringTable(const FString& InPluginName, const FString& InPluginRelativeTablePath);
+
+	/**
+	 * Export the key, string, and meta-data information in this string table to a CSV file (does not export the
+	 * namespace).
+	 * Because UStringTable is not blueprint exposed, we need to pass it as UObject.
+	 * @param StringTable Table to export
+	 * @param ExportPath Disk file path of the target csv file, including extension
+	 * @returns if the export succeeded
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Open Unreal Utilities|Text")
+	static bool ExportStringTableToCSV(const UObject* StringTable, const FString& ExportPath);
+
+	UFUNCTION(BlueprintCallable, Category = "Open Unreal Utilities|Text")
+	static TSet<FString> GetCSVTranslationCultureNames(const FString& CsvDirectoryPath);
+
 	// Load all CSV files from a given folder as polyglot data.
 	// The culture is assumed to be added as a suffix to the file names, i.e. filename_culture.csv,
 	// e.g. translations_de.csv, or translations_en-US.csv
@@ -54,11 +84,7 @@ private:
 	struct FOUUTextIdentity
 	{
 	public:
-		FOUUTextIdentity(FString Namespace, FString Key)
-			: Namespace(MoveTemp(Namespace))
-			, Key(MoveTemp(Key))
-		{
-		}
+		FOUUTextIdentity(FString Namespace, FString Key) : Namespace(MoveTemp(Namespace)), Key(MoveTemp(Key)) {}
 
 		FString Namespace;
 		FString Key;
@@ -68,10 +94,7 @@ private:
 			return Namespace == Other.Namespace && Key == Other.Key;
 		}
 
-		FORCEINLINE bool operator!=(const FOUUTextIdentity& Other) const
-		{
-			return !(Other == *this);
-		}
+		FORCEINLINE bool operator!=(const FOUUTextIdentity& Other) const { return !(Other == *this); }
 
 		friend inline uint32 GetTypeHash(const FOUUTextIdentity& Id)
 		{

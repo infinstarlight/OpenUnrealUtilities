@@ -13,7 +13,7 @@ class TCastObjectIterator
 private:
 	using ElementType = typename TIteratorTraits<IteratorType>::ElementType;
 	using CastElementType = typename TConditionalType<
-		TIsConst<typename TRemovePointer<ElementType>::Type>::Value,
+		std::is_const_v<typename TRemovePointer<ElementType>::Type>,
 		const CastTargetType,
 		CastTargetType>::Type;
 
@@ -21,8 +21,14 @@ private:
 	using ReferenceType = typename TIteratorTraits<IteratorType>::ReferenceType;
 
 	static_assert(TIsPointer<CastTargetType>::Value == false, "TargetType must not be a pointer type");
+<<<<<<< HEAD
 	//UECasts_Private doesn't exist, perhaps this is the alternative
 	static_assert(UE::CoreUObject::Private::TIsCastable<CastTargetType>::Value, "TargetType must be a castable UObject type!");
+=======
+	static_assert(
+		UE::CoreUObject::Private::TIsCastable<CastTargetType>::Value,
+		"TargetType must be a castable UObject type!");
+>>>>>>> origin/master
 
 	IteratorType WrappedIterator;
 

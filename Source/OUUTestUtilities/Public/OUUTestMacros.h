@@ -21,10 +21,15 @@
  * It's recommended only to use these as is OR to explicitly define all flags as opposed to combining this macro with
  * other flags.
  */
+<<<<<<< HEAD
 
 //Says int32 doesn't work here - so using auto
 constexpr auto DEFAULT_OUU_TEST_FLAGS =
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext | EAutomationTestFlags::ServerContext | EAutomationTestFlags::CommandletContext | EAutomationTestFlags::ProgramContext | EAutomationTestFlags::ProductFilter;
+=======
+constexpr EAutomationTestFlags DEFAULT_OUU_TEST_FLAGS =
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter;
+>>>>>>> origin/master
 
 FORCEINLINE FString OUUTESTUTILITIES_API EscapeTestName(const FString& InTestName)
 {

@@ -50,7 +50,7 @@ namespace OUU::Editor::PropertyCustomizationHelpers
 		const TSharedPtr<FAssetThumbnailPool>& ThumbnailPool,
 		const FOnShouldFilterAsset& OnShouldFilterAsset)
 	{
-		if (auto* SoftClass = CastField<FSoftClassProperty>(PropertyHandle->GetProperty()))
+		if (CastField<FSoftClassProperty>(PropertyHandle->GetProperty()) != nullptr)
 		{
 			// Soft class props don't work properly with SObjectPropertyEntryBox
 			return nullptr;
@@ -419,6 +419,33 @@ namespace OUU::Editor::PropertyCustomizationHelpers
 			Class = UObject::StaticClass();
 		}
 		return Class;
+	}
+
+	void AddInlineEditConditionFromProperty(
+		IDetailPropertyRow& PropertyRow,
+		TSharedPtr<IPropertyHandle> EditConditionProperty)
+	{
+		if (ensure(EditConditionProperty && EditConditionProperty.IsValid()) == false
+			|| ensure(EditConditionProperty && CastField<FBoolProperty>(EditConditionProperty->GetProperty())) == false)
+		{
+			return;
+		}
+
+		PropertyRow.EditCondition(
+			TAttribute<bool>::CreateLambda([EditConditionProperty]() -> bool {
+				bool Result = false;
+				if (EditConditionProperty.IsValid() && EditConditionProperty->IsValidHandle())
+				{
+					EditConditionProperty->GetValue(OUT Result);
+				}
+				return Result;
+			}),
+			FOnBooleanValueChanged::CreateLambda([EditConditionProperty](bool _Value) {
+				if (EditConditionProperty.IsValid() && EditConditionProperty->IsValidHandle())
+				{
+					EditConditionProperty->SetValue(_Value);
+				}
+			}));
 	}
 
 } // namespace OUU::Editor::PropertyCustomizationHelpers

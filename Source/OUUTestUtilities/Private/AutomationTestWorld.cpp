@@ -81,8 +81,12 @@ bool FOUUAutomationTestWorld::InitializeGame()
 
 	// Set game mode
 	const bool bIsGameModeSet = World->SetGameMode(URL);
+<<<<<<< HEAD
 	ExtraDebugString = TEXT("Failed to set game mode");
 	CHECK_INIT_GAME_CONDITION(!bIsGameModeSet, ExtraDebugString);
+=======
+	CHECK_INIT_GAME_CONDITION(!bIsGameModeSet, TEXT("Failed to set game mode"));
+>>>>>>> origin/master
 	GameMode = World->GetAuthGameMode();
 
 	// Debug error string required for many of the initialization functions on UWorld
@@ -97,8 +101,12 @@ bool FOUUAutomationTestWorld::InitializeGame()
 	GameMode->PlayerStateClass = APlayerState::StaticClass();
 	LocalPlayer = World->GetGameInstance()->CreateLocalPlayer(0, OUT ErrorString, false);
 	CHECK_INIT_GAME_CONDITION(ErrorString.Len() > 0, ErrorString);
+<<<<<<< HEAD
 	ExtraDebugString = TEXT("Failed to spawn LocalPlayer: returned nullptr");
 	CHECK_INIT_GAME_CONDITION(LocalPlayer == nullptr, ExtraDebugString);
+=======
+	CHECK_INIT_GAME_CONDITION(LocalPlayer == nullptr, TEXT("Failed to spawn LocalPlayer: returned nullptr"));
+>>>>>>> origin/master
 
 	// Begin play for all actors
 	BeginPlay();
@@ -108,8 +116,12 @@ bool FOUUAutomationTestWorld::InitializeGame()
 
 	PlayerController = World->SpawnPlayActor(LocalPlayer, ENetRole::ROLE_Authority, URL, NetIdRepl, OUT ErrorString);
 	CHECK_INIT_GAME_CONDITION(ErrorString.Len() > 0, ErrorString);
+<<<<<<< HEAD
 	ExtraDebugString = TEXT("Failed to spawn PlayerController: returned nullptr");
 	CHECK_INIT_GAME_CONDITION(PlayerController == nullptr, ExtraDebugString);
+=======
+	CHECK_INIT_GAME_CONDITION(PlayerController == nullptr, TEXT("Failed to spawn PlayerController: returned nullptr"));
+>>>>>>> origin/master
 
 	return true;
 }
@@ -130,8 +142,18 @@ void FOUUAutomationTestWorld::CreateWorldImplementation(const FString& WorldSuff
 		DestroyWorldImplementation();
 	}
 
+<<<<<<< HEAD
 	FString ThisWorldName = WorldName += WorldSuffix;
 	const FString NewWorldName = FString(TEXT("OUUAutomationTestWorld_")) += ThisWorldName;
+=======
+	check(GEngine);
+
+	PreviousLocalPlayerClass = GEngine->LocalPlayerClass;
+	// Prevent game local player class from bleeding into automation tests
+	GEngine->LocalPlayerClass = ULocalPlayer::StaticClass();
+
+	const FString NewWorldName = "OUUAutomationTestWorld_" + WorldName + WorldSuffix;
+>>>>>>> origin/master
 
 	const auto* GameMapSettings = GetMutableDefault<UGameMapsSettings>();
 	PreviousDefaultMap = GameMapSettings->GetGameDefaultMap();
@@ -149,6 +171,8 @@ void FOUUAutomationTestWorld::CreateWorldImplementation(const FString& WorldSuff
 
 void FOUUAutomationTestWorld::DestroyWorldImplementation()
 {
+	check(GEngine);
+
 	// Prevent destroying world twice
 	if (!bHasWorld)
 		return;
@@ -180,6 +204,8 @@ void FOUUAutomationTestWorld::DestroyWorldImplementation()
 
 	const auto* GameMapSettings = GetMutableDefault<UGameMapsSettings>();
 	GameMapSettings->SetGameDefaultMap(PreviousDefaultMap);
+
+	GEngine->LocalPlayerClass = PreviousLocalPlayerClass;
 
 	World = nullptr;
 	GameInstance = nullptr;

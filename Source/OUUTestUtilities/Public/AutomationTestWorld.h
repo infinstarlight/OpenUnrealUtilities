@@ -78,6 +78,7 @@ protected:
 	bool bHasWorld = false;
 	FString WorldName;
 	FString PreviousDefaultMap;
+	TSubclassOf<class ULocalPlayer> PreviousLocalPlayerClass;
 
 	void CreateWorldImplementation(const FString& WorldSuffix);
 	void DestroyWorldImplementation();
@@ -95,7 +96,7 @@ struct OUUTESTUTILITIES_API FOUUScopedAutomationTestWorld : public FOUUAutomatio
 public:
 	using Super = FOUUAutomationTestWorld;
 	explicit FOUUScopedAutomationTestWorld(const FString& InWorldName);
-	virtual ~FOUUScopedAutomationTestWorld() override;
+	~FOUUScopedAutomationTestWorld() override;
 
 	// - FAutomationTestWorld
 	void CreateWorld(const FString& WorldSuffix) override;

@@ -2,36 +2,39 @@
 
 #include "AssetValidation/OUUActorValidator.h"
 
-bool UOUUActorValidator::CanValidateAsset_Implementation(UObject* InAsset) const
-{
-	if (IsValid(InAsset) == false)
-	{
-		return false;
-	}
+#include "Misc/DataValidation.h"
 
-	return InAsset->IsA<AActor>();
+bool UOUUActorValidator::CanValidateAsset_Implementation(
+	const FAssetData& InAssetData,
+	UObject* InAsset,
+	FDataValidationContext& InContext) const
+{
+	return IsValid(InAsset) && InAsset->IsA<AActor>();
 }
 
 EDataValidationResult UOUUActorValidator::ValidateLoadedAsset_Implementation(
+	const FAssetData& InAssetData,
 	UObject* InAsset,
-	TArray<FText>& ValidationErrors)
+	FDataValidationContext& Context)
 {
-	EDataValidationResult Result = EDataValidationResult::Valid;
-
-	auto* Actor = Cast<AActor>(InAsset);
+	const auto* Actor = Cast<AActor>(InAsset);
 
 	if (IsValid(Actor) == false)
 	{
+<<<<<<< HEAD
 		//AssetFails(InAsset, INVTEXT("Asset is not an actor"), IN OUT ValidationErrors);
 		//The above is deprecated and has been replaced with the following:
 		AssetFails(InAsset, INVTEXT("Asset is not an actor"));
+=======
+		Context.AddError(INVTEXT("Asset is not an actor"));
+>>>>>>> origin/master
 		return EDataValidationResult::Invalid;
 	}
 
-	USceneComponent* RootComponent = Actor->GetRootComponent();
+	const USceneComponent* RootComponent = Actor->GetRootComponent();
 	TArray<USceneComponent*> AdditionalRoots;
 	Actor->ForEachComponent<USceneComponent>(false, [&](const USceneComponent* SceneComponent) {
-		auto* AttachRoot = SceneComponent->GetAttachmentRoot();
+		const auto* AttachRoot = SceneComponent->GetAttachmentRoot();
 		if (AttachRoot->GetOwner() == Actor && AttachRoot != RootComponent)
 		{
 			// Search class, so we don't need the module dependency just for this class check
@@ -48,18 +51,13 @@ EDataValidationResult UOUUActorValidator::ValidateLoadedAsset_Implementation(
 				return;
 			}
 
-			AssetWarning(
-				Actor,
-				FText::Format(
-					INVTEXT("Actor has multiple root components: {0} and {1}"),
-					FText::FromName(RootComponent->GetFName()),
-					FText::FromName(AttachRoot->GetFName())));
+			const auto WarningMessage = FText::Format(
+				INVTEXT("Actor has multiple root components: {0} and {1}"),
+				FText::FromName(RootComponent->GetFName()),
+				FText::FromName(AttachRoot->GetFName()));
+
+			Context.AddWarning(WarningMessage);
 		}
 	});
-
-	if (Result == EDataValidationResult::Valid)
-	{
-		AssetPasses(InAsset);
-	}
-	return Result;
+	return EDataValidationResult::Valid;
 }

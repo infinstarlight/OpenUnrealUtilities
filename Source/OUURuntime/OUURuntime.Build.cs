@@ -8,16 +8,7 @@ public class OUUModuleRuleHelpers
 {
 	public static void AddGameplayDebuggerDependency(ModuleRules Rules, ReadOnlyTargetRules Target)
 	{
-		if (Target.bBuildDeveloperTools || (Target.Configuration != UnrealTargetConfiguration.Shipping &&
-		                                    Target.Configuration != UnrealTargetConfiguration.Test))
-		{
-			Rules.PrivateDependencyModuleNames.Add("GameplayDebugger");
-			Rules.PublicDefinitions.Add("WITH_GAMEPLAY_DEBUGGER=1");
-		}
-		else
-		{
-			Rules.PublicDefinitions.Add("WITH_GAMEPLAY_DEBUGGER=0");
-		}
+		Rules.SetupGameplayDebuggerSupport(Target, false);
 	}
 }
 
@@ -58,7 +49,7 @@ public class OUURuntime : OUUModuleRules
 			"GameplayTasks",
 			"DeveloperSettings",
 			"CommonUI",
-			
+
 			// OUU Tags
 			"OUUTags"
 		});
@@ -72,8 +63,22 @@ public class OUURuntime : OUUModuleRules
 			"JsonUtilities",
 			"Json",
 			"Projects",
-			"NetCore"
+			"NetCore",
 		});
+
+		if (Target.Platform == UnrealTargetPlatform.Win64)
+		{
+			PrivateDependencyModuleNames.AddRange(new string[]
+			{
+				"SteamShared",
+			});
+			AddEngineThirdPartyPrivateStaticDependencies(Target, "Steamworks");
+			PrivateDefinitions.Add("WITH_STEAM=1");
+		}
+		else
+		{
+			PrivateDefinitions.Add("WITH_STEAM=0");
+		}
 
 		// - Editor only dependencies
 		if (Target.bBuildEditor)

@@ -3,7 +3,12 @@
 #include "Localization/OUUTextLibrary.h"
 
 #include "HAL/PlatformFileManager.h"
+#include "Interfaces/IPluginManager.h"
+#include "Internationalization/Culture.h"
 #include "Internationalization/PolyglotTextData.h"
+#include "Internationalization/StringTable.h"
+#include "Internationalization/StringTableCore.h"
+#include "Internationalization/StringTableRegistry.h"
 #include "LogOpenUnrealUtilities.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
@@ -61,8 +66,64 @@ FText UOUUTextLibrary::JoinBy(const TArray<FText>& Texts, FText Separator)
 	return CombinedText;
 }
 
+void UOUUTextLibrary::RegisterPluginStringTable(
+	const FString& InPluginName,
+	const FName& InTableId,
+	const FString& InNamespace,
+	const FString& InPluginRelativeTablePath)
+{
+	const auto pPlugin = IPluginManager::Get().FindPlugin(InPluginName);
+	if (ensureMsgf(pPlugin, TEXT("Plugin %s not found"), *InPluginName))
+	{
+		FStringTableRegistry::Get()
+			.Internal_LocTableFromFile(InTableId, InNamespace, InPluginRelativeTablePath, pPlugin->GetContentDir());
+	}
+}
+
+void UOUUTextLibrary::RegisterPluginStringTable(const FString& InPluginName, const FString& InPluginRelativeTablePath)
+{
+	const FString FileBaseName = FPaths::GetBaseFilename(InPluginRelativeTablePath);
+	RegisterPluginStringTable(InPluginName, *FileBaseName, FileBaseName, InPluginRelativeTablePath);
+}
+
+bool UOUUTextLibrary::ExportStringTableToCSV(const UObject* StringTable, const FString& ExportPath)
+{
+	if (const auto* CastedStringTable = Cast<UStringTable>(StringTable))
+	{
+		return CastedStringTable->GetStringTable()->ExportStrings(ExportPath);
+	}
+	return false;
+}
+
+TSet<FString> UOUUTextLibrary::GetCSVTranslationCultureNames(const FString& CsvDirectoryPath)
+{
+	TSet<FString> Result;
+	auto& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+	PlatformFile.IterateDirectory(*CsvDirectoryPath, [&](const TCHAR* IteratePath, bool IsDirectory) -> bool {
+		if (IsDirectory)
+		{
+			return true;
+		}
+		FString PathPart, NamePart, ExtensionPart;
+		FPaths::Split(IteratePath, PathPart, NamePart, ExtensionPart);
+		if (ExtensionPart.Equals(TEXT("csv"), ESearchCase::IgnoreCase) == false)
+		{
+			return true;
+		}
+
+		FString BaseNamePart, CulturePart;
+		NamePart.Split(TEXT("_"), &BaseNamePart, &CulturePart);
+
+		Result.Add(CulturePart);
+		return true;
+	});
+	return Result;
+}
+
 void UOUUTextLibrary::LoadLocalizedTextsFromCSV(const FString& CsvDirectoryPath)
 {
+	const auto PrioritizedCultureNames = FInternationalization::Get().GetCurrentCulture()->GetPrioritizedParentCultureNames();
+
 	auto& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
 	TMap<FOUUTextIdentity, FPolyglotTextData> PolyglotData;
 	PlatformFile.IterateDirectory(*CsvDirectoryPath, [&](const TCHAR* IteratePath, bool IsDirectory) -> bool {
@@ -72,9 +133,21 @@ void UOUUTextLibrary::LoadLocalizedTextsFromCSV(const FString& CsvDirectoryPath)
 		}
 		FString PathPart, NamePart, ExtensionPart;
 		FPaths::Split(IteratePath, PathPart, NamePart, ExtensionPart);
+		if (ExtensionPart.Equals(TEXT("csv"), ESearchCase::IgnoreCase) == false)
+		{
+			return true;
+		}
+
 		FString BaseNamePart, CulturePart;
 		NamePart.Split(TEXT("_"), &BaseNamePart, &CulturePart);
-		LoadLocalizedTextsFromCSV(IteratePath, CulturePart, PolyglotData);
+
+		// Skip any culture codes that are not part of the active culture name list.
+		// Allowing the entire list is required to e.g. allow having a base en translation with only a few en-US
+		// overrides.
+		if (PrioritizedCultureNames.Contains(CulturePart))
+		{
+			LoadLocalizedTextsFromCSV(IteratePath, CulturePart, PolyglotData);
+		}
 		return true;
 	});
 
@@ -155,6 +228,11 @@ void UOUUTextLibrary::LoadLocalizedTextsFromCSV(
 		auto& Key = ImportRow[KeyIdx];
 		FString SourceString = ImportRow[SourceStringIdx];
 		SourceString = SourceString.ReplaceEscapedCharWithChar();
+		if (SourceString.IsEmpty())
+		{
+			continue;
+		}
+
 		FString LocalizedString = ImportRow[LocalizedStringIdx];
 		LocalizedString = LocalizedString.ReplaceEscapedCharWithChar();
 
